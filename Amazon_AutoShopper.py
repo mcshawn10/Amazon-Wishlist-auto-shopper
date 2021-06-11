@@ -98,7 +98,7 @@ def check_out():
     print("Your total is: ", checkout_total.text)
 
 
-shop = login_credentials("stoopidproductions10@gmail.com", "Guap2da!nfinity")
+shop = login_credentials("YOUR EMAIL HERE", "YOUR PASSWORD HERE")
 shop.sign_in()
 sleep(1)
 shopping_spree()
