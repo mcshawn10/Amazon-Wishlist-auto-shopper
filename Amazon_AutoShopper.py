@@ -4,7 +4,6 @@ from selenium.webdriver import ActionChains as A
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-import pandas as pd
 from time import sleep
 
 PATH = "C:\Program Files (x86)\chromedriver.exe"
