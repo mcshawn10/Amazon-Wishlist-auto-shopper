@@ -1,4 +1,4 @@
-# Amazon-Wishlist-auto-shopper
+# Amazon-auto-shopper
 Amazon bot that takes in your desired items and automatically adds to cart
 
 This project utilizes the Selenium framework to do en masse shopping for the the user. 
