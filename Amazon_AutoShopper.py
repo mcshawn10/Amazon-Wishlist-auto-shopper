@@ -4,6 +4,8 @@ from selenium.webdriver import ActionChains as A
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
+
 from time import sleep
 
 PATH = "C:\Program Files (x86)\chromedriver.exe"
@@ -12,10 +14,60 @@ driver = webdriver.Chrome(PATH)
 sleep(1)
 
 
-def set_wishlist():
+def web_scrape():
+    price_combined = []
+    item_titles = []
+    combined_price = ""
 
-    amount = input("How many items are you buying today? \n")
+    driver.implicitly_wait(2)
+    all_product_info = driver.find_elements_by_css_selector(
+        "div[class='a-section a-spacing-medium']")
+    driver.implicitly_wait(2)
+    print("Calculating cheapest item...")
+    for product in all_product_info:
+
+        try:
+            product_name_display = product.find_element_by_css_selector(
+                "span[class='a-size-base-plus a-color-base a-text-normal']").is_displayed()
+            product_price_display = product.find_element_by_css_selector(
+                "span[class='a-price']").is_displayed()
+
+            if product_name_display == True and product_price_display == True:
+                product_name_TEXT = product.find_element_by_css_selector(
+                    "span[class='a-size-base-plus a-color-base a-text-normal']").text
+
+                price_whole_TEXT = product.find_element_by_css_selector(
+                    "span[class='a-price-whole']").text
+                price_frac_TEXT = product.find_element_by_css_selector(
+                    "span[class='a-price-fraction']").text
+
+                combined_price = price_whole_TEXT + '.' + price_frac_TEXT
+                combined_price = float(combined_price)
+
+                item_titles.append(product_name_TEXT)
+                price_combined.append(combined_price)
+
+        except NoSuchElementException:
+            continue
+
+    print("$", min(price_combined))
+    index_cheapest = price_combined.index(min(price_combined))
+    cheapest_item_name = item_titles[index_cheapest]
+
+    print(cheapest_item_name)
+
+    return cheapest_item_name
+
+
+def set_budget():
+    price_cap = input("What is your budget today? \n $")
+    price_cap = float(price_cap)
+    return price_cap
+
+
+def set_wishlist():
     WishList = []
+    amount = input("Enter number amount of items: \n")
 
     while len(WishList) < int(amount):
         item = input("Input your wishlist items: \n")
@@ -54,7 +106,10 @@ class login_credentials:
 
 
 def shopping_spree():
+
+    budget = set_budget()
     wList = set_wishlist()
+    chosen_item = ""
 
     for x in wList:
         search = driver.find_element_by_id("twotabsearchtextbox").send_keys(x)
@@ -63,8 +118,24 @@ def shopping_spree():
         driver.implicitly_wait(3)
         A(driver).move_to_element(button_search).click().perform()
         driver.implicitly_wait(3)
-        driver.execute_script("window.scrollTo(0, 500)")
+        driver.execute_script("window.scrollTo(0, 700)")
+        driver.implicitly_wait(3)
 
+        chosen_item = web_scrape()
+        driver.implicitly_wait(3)
+
+        first_erase = driver.find_element_by_id("twotabsearchtextbox")
+        first_erase.send_keys(Keys.CONTROL, 'a')
+        first_erase.send_keys(Keys.BACKSPACE)
+
+        driver.find_element_by_id("twotabsearchtextbox").send_keys(chosen_item)
+        driver.implicitly_wait(3)
+        second_search = driver.find_element_by_id("nav-search-submit-button")
+        A(driver).move_to_element(second_search).click().perform()
+        driver.implicitly_wait(3)
+
+
+# CODE THAT ADDS ITEMS TO CART
         select = driver.find_element_by_class_name("s-image")
         driver.implicitly_wait(3)
         A(driver).move_to_element(select).click().perform()
@@ -78,11 +149,12 @@ def shopping_spree():
         erase.send_keys(Keys.CONTROL, 'a')
         erase.send_keys(Keys.BACKSPACE)
 
-    driver.implicitly_wait(10)
+    driver.implicitly_wait(3)
+    check_out(budget)
 
 
-def check_out():
-    budget2 = price_cap
+def check_out(compare_price):
+
     purchase = driver.find_element_by_id("nav-cart")
     A(driver).move_to_element(purchase).click().perform()
     driver.implicitly_wait(3)
@@ -92,9 +164,17 @@ def check_out():
     driver.implicitly_wait(3)
 
     checkout_total = driver.find_element_by_xpath(
-        "/html/body/div[5]/div[2]/div/div/div[2]/div/div[1]/div/div[2]/div/div/div/table/tbody/tr[7]/td[2]")
+        "//*[@id='subtotals-marketplace-table']/tbody/tr[7]/td[2]").text
+    print("Your total is: ", checkout_total)
+    checkout_total = list(checkout_total)
+    checkout_total.remove('$')
+    checkout_total_final = ''.join(checkout_total)
+    checkout_total_final = float(checkout_total_final)
 
-    print("Your total is: ", checkout_total.text)
+    if compare_price < checkout_total_final:
+        print("Your total is over your budget, check your cart.")
+    elif compare_price >= checkout_total_final:
+        print("You are within your budget!")
 
 
 shop = login_credentials("YOUR EMAIL HERE", "YOUR PASSWORD HERE")
@@ -102,4 +182,3 @@ shop.sign_in()
 sleep(1)
 shopping_spree()
 sleep(1)
-check_out()
